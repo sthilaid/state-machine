@@ -8,15 +8,44 @@
 (include "../include/state-machine.scm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Predicate test
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (gen-state sym) (lambda (_) (write sym)))
+(define (empty-state _) '...)
+(define-state-machine pred-test-sm
+  'A
+  ((A empty-state)
+   (B empty-state)
+   (C empty-state))
+  ((* * empty-state)))
+(define-test predicate-test "YNNNYNNNY" 'ok
+  (let ((out (lambda (x) (write (if x 'Y 'N))))
+        (sm (new pred-test-sm)))
+    (out (pred-test-sm-A? sm))
+    (out (pred-test-sm-B? sm))
+    (out (pred-test-sm-C? sm))
+    (transition sm 'B)
+    (out (pred-test-sm-A? sm))
+    (out (pred-test-sm-B? sm))
+    (out (pred-test-sm-C? sm))
+    (transition sm 'C)
+    (out (pred-test-sm-A? sm))
+    (out (pred-test-sm-B? sm))
+    (out (pred-test-sm-C? sm))
+    'ok))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Usage exemple: Simple state machine test
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-state-machine simple-sm
   'A
-  `((A ,(lambda (_) (write 'A)))
-    (B ,(lambda (_) (write 'B)))
-    (C ,(lambda (_) (write 'C)))
-    (D ,(lambda (_) (write 'D))))
+  ((A (lambda (_) (write 'A)))
+   (B (lambda (_) (write 'B)))
+   (C (lambda (_) (write 'C)))
+   (D (lambda (_) (write 'D))))
   ((A B (lambda (_) (write 'ab)))
    (A C (lambda (_) (write 'ac)))
    (C D (lambda (_) (write 'cd)))
@@ -56,22 +85,22 @@
 
 (define-state-machine binary-analysis
   'start
-  `((start ,(lambda (self)
-              (transition self (binary-analysis-next-state! self))))
-    (zero ,(lambda (self)
-             (update! self binary-analysis bin-str
-                      (lambda (b) (substring b 1 (string-length b))))
-             (update! self binary-analysis decimal-number
-                      (lambda (x) (* x 2)))
-             (transition self (binary-analysis-next-state! self))))
-    (one ,(lambda (self)
-            (update! self binary-analysis bin-str
-                     (lambda (b) (substring b 1 (string-length b))))
-            (update! self binary-analysis decimal-number
-                     (lambda (x) (+ (* x 2) 1)))
+  ((start (lambda (self)
             (transition self (binary-analysis-next-state! self))))
-    (error ,(lambda (_) (pp "invalid binary number!")))
-    (finished! ,(lambda (self) (binary-analysis-decimal-number self))))
+   (zero (lambda (self)
+           (update! self binary-analysis bin-str
+                    (lambda (b) (substring b 1 (string-length b))))
+           (update! self binary-analysis decimal-number
+                    (lambda (x) (* x 2)))
+           (transition self (binary-analysis-next-state! self))))
+   (one (lambda (self)
+          (update! self binary-analysis bin-str
+                   (lambda (b) (substring b 1 (string-length b))))
+          (update! self binary-analysis decimal-number
+                   (lambda (x) (+ (* x 2) 1)))
+          (transition self (binary-analysis-next-state! self))))
+   (error (lambda (_) (pp "invalid binary number!")))
+   (finished! (lambda (self) (binary-analysis-decimal-number self))))
   ((* * (lambda (_) 'O_o)))
   create-new-class?: #f)
 

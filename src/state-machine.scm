@@ -64,13 +64,25 @@
          (,(caddr tr) from)
          ;; execute the state action
          ((get-state-action (state-machine-desc from) to) from))))
-  `(begin
-     ;; Subclass the state-machine meta-class and set its state
-     ;; machine descriptor
-     ,(if create-new-class? `(define-class ,name (state-machine)) ''nothing)
-     (,(symbol-append name '-desc-set!) (new state-machine-desc
-                                             ,init-state
-                                             ,states))
-     ,@(map transition->method transitions)))
+  (define (gen-state-predicate state-name)
+    `(define (,(symbol-append name '- state-name '?) obj)
+       (equal? (,(symbol-append name '-current-state) obj)
+               (quote ,state-name))))
+  (define (state-def->runtime states)
+    `(list ,@(map 
+              (lambda (s) `(list (quote ,(car s)) ,(cadr s)))
+              states)))
+  (let ((code
+         `(begin
+            ;; Subclass the state-machine meta-class and set its state
+            ;; machine descriptor
+            ,(if create-new-class? `(define-class ,name (state-machine))
+                 ''nothing)
+            (,(symbol-append name '-desc-set!)
+             (new state-machine-desc ,init-state
+                  ,(state-def->runtime states)))
+            ,@(map transition->method transitions)
+            ,@(map (compose gen-state-predicate car) states))))
+   code))
 
 
